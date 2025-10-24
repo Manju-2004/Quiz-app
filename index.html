@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Quiz App</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .quiz-container {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+      width: 400px;
+      padding: 25px 30px;
+      text-align: center;
+      position: relative;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      overflow: hidden;
+      height: 8px;
+      margin-bottom: 15px;
+    }
+
+    .progress {
+      height: 100%;
+      background-color: #00ffb3;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .timer {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      background-color: rgba(255, 255, 255, 0.2);
+      padding: 6px 12px;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+
+    .question {
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+    }
+
+    .answer-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      background-color: #fff;
+      color: #333;
+      border: none;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: #667eea;
+      color: #fff;
+    }
+
+    .next-btn, .start-btn {
+      background-color: #764ba2;
+      color: #fff;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .next-btn:hover, .start-btn:hover {
+      background-color: #5c3a88;
+    }
+
+    .correct {
+      background-color: #28a745 !important;
+      color: #fff;
+    }
+
+    .incorrect {
+      background-color: #dc3545 !important;
+      color: #fff;
+    }
+
+    .result {
+      font-size: 1.2rem;
+      line-height: 1.8;
+    }
+
+    .emoji {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    #quiz-content {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <div id="start-screen">
+      <h1>Welcome to the Quiz! 🎯</h1>
+      <p>Test your web development knowledge!</p>
+      <button class="start-btn" id="start-btn">Start Quiz</button>
+    </div>
+
+    <div id="quiz-content">
+      <div class="timer" id="timer">15s</div>
+      <h1>Quiz App</h1>
+      <div class="progress-bar"><div class="progress" id="progress"></div></div>
+      <div class="quiz">
+        <div class="question" id="question">Question text</div>
+        <div class="answer-buttons" id="answer-buttons"></div>
+        <button class="next-btn" id="next-btn">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🎵 Sound effects -->
+  <audio id="correct-sound" src="https://cdn.pixabay.com/download/audio/2021/09/06/audio_2e8f6c7e82.mp3?filename=correct-answer-126517.mp3"></audio>
+  <audio id="wrong-sound" src="https://cdn.pixabay.com/download/audio/2021/09/06/audio_8f9e9b2f73.mp3?filename=error-126627.mp3"></audio>
+  <audio id="tick-sound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_9a3e9279bb.mp3?filename=ticking-clock-loop-111336.mp3" loop></audio>
+  <audio id="timeup-sound" src="https://cdn.pixabay.com/download/audio/2022/02/23/audio_c086c09a36.mp3?filename=alarm-clock-short-108208.mp3"></audio>
+
+  <script>
+    const questions = [
+      {
+        question: "Which language runs in a web browser?",
+        answers: [
+          { text: "Java", correct: false },
+          { text: "C", correct: false },
+          { text: "Python", correct: false },
+          { text: "JavaScript", correct: true },
+        ],
+      },
+      {
+        question: "What does CSS stand for?",
+        answers: [
+          { text: "Colorful Style Sheets", correct: false },
+          { text: "Cascading Style Sheets", correct: true },
+          { text: "Computer Style Sheets", correct: false },
+          { text: "Creative Style System", correct: false },
+        ],
+      },
+      {
+        question: "What does HTML stand for?",
+        answers: [
+          { text: "Hyper Text Markup Language", correct: true },
+          { text: "High Text Machine Language", correct: false },
+          { text: "Hyper Tool Markup Language", correct: false },
+          { text: "Home Tool Markup Language", correct: false },
+        ],
+      },
+      {
+        question: "Which company developed JavaScript?",
+        answers: [
+          { text: "Netscape", correct: true },
+          { text: "Microsoft", correct: false },
+          { text: "Google", correct: false },
+          { text: "Apple", correct: false },
+        ],
+      },
+    ];
+
+    const questionElement = document.getElementById("question");
+    const answerButtons = document.getElementById("answer-buttons");
+    const nextButton = document.getElementById("next-btn");
+    const timerElement = document.getElementById("timer");
+    const progressBar = document.getElementById("progress");
+    const startScreen = document.getElementById("start-screen");
+    const quizContent = document.getElementById("quiz-content");
+    const startBtn = document.getElementById("start-btn");
+
+    const correctSound = document.getElementById("correct-sound");
+    const wrongSound = document.getElementById("wrong-sound");
+    const tickSound = document.getElementById("tick-sound");
+    const timeupSound = document.getElementById("timeup-sound");
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let timeLeft = 15;
+    let timer;
+
+    // Start button logic (sound unlock fix)
+    startBtn.addEventListener("click", () => {
+      startScreen.style.display = "none";
+      quizContent.style.display = "block";
+      initAudio();
+      startQuiz();
+    });
+
+    function initAudio() {
+      correctSound.play().then(() => correctSound.pause());
+      wrongSound.play().then(() => wrongSound.pause());
+      tickSound.play().then(() => tickSound.pause());
+      timeupSound.play().then(() => timeupSound.pause());
+    }
+
+    function startQuiz() {
+      currentQuestionIndex = 0;
+      score = 0;
+      nextButton.innerHTML = "Next";
+      showQuestion();
+      updateProgress();
+    }
+
+    function showQuestion() {
+      resetState();
+      startTimer();
+      const currentQuestion = questions[currentQuestionIndex];
+      questionElement.innerHTML = currentQuestion.question;
+
+      currentQuestion.answers.forEach((answer) => {
+        const button = document.createElement("button");
+        button.innerHTML = answer.text;
+        button.classList.add("btn");
+        answerButtons.appendChild(button);
+        if (answer.correct) {
+          button.dataset.correct = answer.correct;
+        }
+        button.addEventListener("click", selectAnswer);
+      });
+    }
+
+    function resetState() {
+      nextButton.style.display = "none";
+      clearInterval(timer);
+      tickSound.pause();
+      tickSound.currentTime = 0;
+      while (answerButtons.firstChild) {
+        answerButtons.removeChild(answerButtons.firstChild);
+      }
+    }
+
+    function selectAnswer(e) {
+      const selectedBtn = e.target;
+      const isCorrect = selectedBtn.dataset.correct === "true";
+      if (isCorrect) {
+        correctSound.play();
+        selectedBtn.classList.add("correct");
+        score++;
+      } else {
+        wrongSound.play();
+        selectedBtn.classList.add("incorrect");
+      }
+
+      Array.from(answerButtons.children).forEach((button) => {
+        if (button.dataset.correct === "true") {
+          button.classList.add("correct");
+        }
+        button.disabled = true;
+      });
+
+      clearInterval(timer);
+      tickSound.pause();
+      nextButton.style.display = "block";
+    }
+
+    function startTimer() {
+      timeLeft = 15;
+      timerElement.textContent = `${timeLeft}s`;
+      tickSound.play();
+
+      timer = setInterval(() => {
+        timeLeft--;
+        timerElement.textContent = `${timeLeft}s`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          tickSound.pause();
+          timeupSound.play();
+          autoSelect();
+        }
+      }, 1000);
+    }
+
+    function autoSelect() {
+      Array.from(answerButtons.children).forEach((button) => {
+        if (button.dataset.correct === "true") {
+          button.classList.add("correct");
+        }
+        button.disabled = true;
+      });
+      nextButton.style.display = "block";
+    }
+
+    function showScore() {
+      resetState();
+      clearInterval(timer);
+      tickSound.pause();
+      questionElement.innerHTML = `
+        <div class="emoji">${
+          score === questions.length
+            ? "🏆"
+            : score >= questions.length / 2
+            ? "😊"
+            : "😢"
+        }</div>
+        <div class="result">
+          You scored <b>${score}</b> out of <b>${questions.length}</b><br>
+          (${((score / questions.length) * 100).toFixed(0)}%)
+        </div>`;
+      nextButton.innerHTML = "Play Again";
+      nextButton.style.display = "block";
+    }
+
+    function handleNextButton() {
+      currentQuestionIndex++;
+      if (currentQuestionIndex < questions.length) {
+        showQuestion();
+        updateProgress();
+      } else {
+        showScore();
+        updateProgress();
+      }
+    }
+
+    function updateProgress() {
+      const progressPercent =
+        (currentQuestionIndex / questions.length) * 100;
+      progressBar.style.width = `${progressPercent}%`;
+    }
+
+    nextButton.addEventListener("click", () => {
+      if (currentQuestionIndex < questions.length) {
+        handleNextButton();
+      } else {
+        startQuiz();
+      }
+    });
+  </script>
+</body>
+</html>
